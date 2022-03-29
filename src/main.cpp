@@ -14,8 +14,7 @@
 // the source template at `configured_files/config.hpp.in`.
 #include <internal_use_only/config.hpp>
 
-template<std::size_t Width, std::size_t Height> struct GameBoard
-{
+template<std::size_t Width, std::size_t Height> struct GameBoard {
   static constexpr std::size_t width = Width;
   static constexpr std::size_t height = Height;
 
@@ -27,8 +26,7 @@ template<std::size_t Width, std::size_t Height> struct GameBoard
   std::string &get_string(std::size_t x, std::size_t y) { return strings.at(x).at(y); }
 
 
-  void set(std::size_t x, std::size_t y, bool new_value)
-  {
+  void set(std::size_t x, std::size_t y, bool new_value)  {
     get(x, y) = new_value;
 
     if (new_value) {
@@ -38,8 +36,7 @@ template<std::size_t Width, std::size_t Height> struct GameBoard
     }
   }
 
-  void visit(auto visitor)
-  {
+  void visit(auto visitor) {
     for (std::size_t x = 0; x < width; ++x) {
       for (std::size_t y = 0; y < height; ++y) { visitor(x, y, *this); }
     }
@@ -49,13 +46,11 @@ template<std::size_t Width, std::size_t Height> struct GameBoard
 
   [[nodiscard]] bool &get(std::size_t x, std::size_t y) { return values.at(x).at(y); }
 
-  GameBoard()
-  {
+  GameBoard()  {
     visit([](const auto x, const auto y, auto &gameboard) { gameboard.set(x, y, true); });
   }
 
-  void update_strings()
-  {
+  void update_strings(){
     for (std::size_t x = 0; x < width; ++x) {
       for (std::size_t y = 0; y < height; ++y) { set(x, y, get(x, y)); }
     }
@@ -63,8 +58,7 @@ template<std::size_t Width, std::size_t Height> struct GameBoard
 
   void toggle(std::size_t x, std::size_t y) { set(x, y, !get(x, y)); }
 
-  void press(std::size_t x, std::size_t y)
-  {
+  void press(std::size_t x, std::size_t y){
     ++move_count;
     toggle(x, y);
     if (x > 0) { toggle(x - 1, y); }
@@ -73,8 +67,7 @@ template<std::size_t Width, std::size_t Height> struct GameBoard
     if (y < height - 1) { toggle(x, y + 1); }
   }
 
-  [[nodiscard]] bool solved() const
-  {
+  [[nodiscard]] bool solved() const {
     for (std::size_t x = 0; x < width; ++x) {
       for (std::size_t y = 0; y < height; ++y) {
         if (!get(x, y)) { return false; }
@@ -86,8 +79,7 @@ template<std::size_t Width, std::size_t Height> struct GameBoard
 };
 
 
-void consequence_game()
-{
+void consequence_game(){
   auto screen = ftxui::ScreenInteractive::TerminalOutput();
 
   GameBoard<3, 3> gb;
@@ -156,24 +148,21 @@ void consequence_game()
   screen.Loop(renderer);
 }
 
-struct Color
-{
+struct Color {
   std::uint8_t R{};
   std::uint8_t G{};
   std::uint8_t B{};
 };
 
 // A simple way of representing a bitmap on screen using only characters
-struct Bitmap : ftxui::Node
-{
+struct Bitmap : ftxui::Node {
   Bitmap(std::size_t width, std::size_t height)// NOLINT same typed parameters adjacent to each other
     : width_(width), height_(height)
   {}
 
   Color &at(std::size_t x, std::size_t y) { return pixels.at(width_ * y + x); }
 
-  void ComputeRequirement() override
-  {
+  void ComputeRequirement() override {
     requirement_ = ftxui::Requirement{
       .min_x = static_cast<int>(width_), .min_y = static_cast<int>(height_ / 2), .selected_box{ 0, 0, 0, 0 }
     };
@@ -181,8 +170,7 @@ struct Bitmap : ftxui::Node
 
   void SetBox(ftxui::Box box) override { box_ = box; }
 
-  void Render(ftxui::Screen &screen) override
-  {
+  void Render(ftxui::Screen &screen) override {
     for (std::size_t x = 0; x < width_; ++x) {
       for (std::size_t y = 0; y < height_ / 2; ++y) {
         auto &p = screen.PixelAt(box_.x_min + static_cast<int>(x), box_.y_min + static_cast<int>(y));
@@ -208,8 +196,7 @@ private:
   std::vector<Color> pixels = std::vector<Color>(width_ * height_, Color{});
 };
 
-void game_iteration_canvas()
-{
+void game_iteration_canvas() {
   // this should probably have a `bitmap` helper function that does what you expect
   // similar to the other parts of FTXUI
   auto bm = std::make_shared<Bitmap>(50, 50);// NOLINT magic numbers
@@ -305,11 +292,10 @@ void game_iteration_canvas()
   refresh_ui.join();
 }
 
-int main(int argc, const char **argv)
-{
+int main(int argc, const char **argv) {
   try {
     static constexpr auto USAGE =
-      R"(intro
+    R"(intro
 
     Usage:
           intro turn_based
@@ -324,9 +310,12 @@ int main(int argc, const char **argv)
     std::map<std::string, docopt::value> args = docopt::docopt(USAGE,
       { std::next(argv), std::next(argv, argc) },
       true,// show help if requested
-      fmt::format("{} {}",
-        cpp-best-practices_game_jam_1::cmake::project_name,
-        cpp-best-practices_game_jam_1::cmake::project_version));// version string, acquired
+      fmt::format("{} {}.{}.{}",
+        cpp_best_practices_game_jam_one::cmake::project_name,
+        cpp_best_practices_game_jam_one::cmake::project_version_major,
+        cpp_best_practices_game_jam_one::cmake::project_version_minor,
+        cpp_best_practices_game_jam_one::cmake::project_version_patch));
+        //cpp_best_practices_game_jam_one::cmake::project_version));// version string, acquired
                                             // from config.hpp via CMake
 
     if (args["turn_based"].asBool()) {

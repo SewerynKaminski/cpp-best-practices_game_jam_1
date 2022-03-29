@@ -38,5 +38,6 @@ function install_sdl() {
 # install_qt
 
 # build with:
-cmake -S . -B "./build"
+cmake -S . -B "./build" -DENABLE_DEVELOPER_MODE:BOOL=OFF
 cmake --build "./build"
+[ -e ./build/src/intro ] && strip -s ./build/src/intro
