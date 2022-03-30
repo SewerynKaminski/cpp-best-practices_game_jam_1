@@ -185,8 +185,8 @@ struct Bitmap : ftxui::Node {
   }
 
   void Render ( ftxui::Screen &screen ) override {
-    for ( auto x = 0U; x < width_; x++ ) {
-      for ( auto y = 0U; y < height_ / 2; y++ ) {
+    for ( auto x = 0UL; x < width_; x++ ) {
+      for ( auto y = 0UL; y < height_ / 2; y++ ) {
         auto &p = screen.PixelAt ( box_.x_min + static_cast<int>( x ), box_.y_min + static_cast<int>( y ) );
         p.character = "▄";
         const auto &top_color = at ( x, y * 2 );
