@@ -37,8 +37,8 @@ template<std::size_t Width, std::size_t Height> struct GameBoard {
   }
 
   void visit ( auto visitor ) {
-    for ( auto x = 0u; x < width; ++x) {
-      for ( auto y = 0u; y < height; ++y) {
+    for ( auto x = 0U; x < width; ++x) {
+      for ( auto y = 0U; y < height; ++y) {
           visitor ( x, y, *this );
       }
     }
@@ -57,8 +57,8 @@ template<std::size_t Width, std::size_t Height> struct GameBoard {
   }
 
   void update_strings( ) {
-    for ( auto x = 0u; x < width; x++ ) {
-      for ( auto y = 0u; y < height; y++ ) {
+    for ( auto x = 0U; x < width; x++ ) {
+      for ( auto y = 0U; y < height; y++ ) {
           set ( x, y, get( x, y ) );
       }
     }
@@ -71,15 +71,15 @@ template<std::size_t Width, std::size_t Height> struct GameBoard {
   void press ( std::size_t x, std::size_t y ) {
     ++move_count;
     toggle ( x, y );
-    if ( x > 0u ) { toggle ( x - 1, y ); }
-    if ( y > 0u ) { toggle ( x, y - 1 ); }
+    if ( x > 0U ) { toggle ( x - 1, y ); }
+    if ( y > 0U ) { toggle ( x, y - 1 ); }
     if ( x < width - 1) { toggle(x + 1, y); }
     if ( y < height - 1) { toggle(x, y + 1); }
   }
 
   [[nodiscard]] bool solved() const {
-    for ( auto x = 0u; x < width; x++ ) {
-      for ( auto y = 0u; y < height; y++ ) {
+    for ( auto x = 0U; x < width; x++ ) {
+      for ( auto y = 0U; y < height; y++ ) {
         if ( !get ( x, y ) ) {
             return false;
         }
@@ -105,8 +105,8 @@ void consequence_game ( ) {
 
   const auto make_buttons = [&] {
     std::vector<ftxui::Component> buttons;
-    for ( auto x = 0u; x < gb.width; x++ ) {
-      for ( auto y = 0u; y < gb.height; y++ ) {
+    for ( auto x = 0U; x < gb.width; x++ ) {
+      for ( auto y = 0U; y < gb.height; y++ ) {
         buttons.push_back ( ftxui::Button ( &gb.get_string ( x, y ), [=, &gb] {
           if ( !gb.solved ( ) ) {
               gb.press(x, y);
@@ -122,10 +122,10 @@ void consequence_game ( ) {
   auto quit_button = ftxui::Button ( &quit_text, screen.ExitLoopClosure ( ) );
   auto make_layout = [&] {
     std::vector<ftxui::Element> rows;
-    auto idx = 0u;
-    for ( auto x = 0u; x < gb.width; x++ ) {
+    auto idx = 0U;
+    for ( auto x = 0U; x < gb.width; x++ ) {
       std::vector<ftxui::Element> row;
-      for ( auto y = 0u; y < gb.height; y++ ) {
+      for ( auto y = 0U; y < gb.height; y++ ) {
         row.push_back ( buttons[idx]->Render ( ) );
         idx++;
       }
@@ -139,8 +139,8 @@ void consequence_game ( ) {
   static constexpr auto random_seed = 42;
 
   std::mt19937 gen32 { random_seed };// NOLINT fixed seed
-  std::uniform_int_distribution<std::size_t> x(0u, gb.width - 1);
-  std::uniform_int_distribution<std::size_t> y(0u, gb.height - 1);
+  std::uniform_int_distribution<std::size_t> x(0, gb.width - 1);
+  std::uniform_int_distribution<std::size_t> y(0, gb.height - 1);
 
   for (int i = 0; i < randomization_iterations; i++ ) {
       gb.press ( x ( gen32 ), y ( gen32 ) );
@@ -185,8 +185,8 @@ struct Bitmap : ftxui::Node {
   }
 
   void Render ( ftxui::Screen &screen ) override {
-    for ( auto x = 0u; x < width_; x++ ) {
-      for ( auto y = 0u; y < height_ / 2; y++ ) {
+    for ( auto x = 0U; x < width_; x++ ) {
+      for ( auto y = 0U; y < height_ / 2; y++ ) {
         auto &p = screen.PixelAt ( box_.x_min + static_cast<int>( x ), box_.y_min + static_cast<int>( y ) );
         p.character = "▄";
         const auto &top_color = at ( x, y * 2 );
@@ -231,14 +231,14 @@ void game_iteration_canvas ( ) {
     fps = 1.0/ (static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(elapsed_time).count())
              / 1'000'000.0);// NOLINT magic numbers
 
-    for ( auto row = 0u; row < max_row; row++ ) {
-      for ( auto col = 0u; col < bm->width(); col++ ) {
+    for ( auto row = 0U; row < max_row; row++ ) {
+      for ( auto col = 0U; col < bm->width(); col++ ) {
           (bm->at(col, row).R)++;
       }
     }
 
-    for ( auto row = 0u; row < bm->height(); row++ ) {
-      for ( auto col = 0u; col < max_col; col++ ) {
+    for ( auto row = 0U; row < bm->height(); row++ ) {
+      for ( auto col = 0U; col < max_col; col++ ) {
           (bm->at(col, row).G)++;
       }
     }
