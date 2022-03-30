@@ -1,4 +1,4 @@
-# cpp-best-practices_game_jam_1
+# cpp_best_practices_game_jam_one
 
 [![ci](https://github.com/SewerynKaminski/cpp-best-practices_game_jam_1/actions/workflows/ci.yml/badge.svg)](https://github.com/SewerynKaminski/cpp-best-practices_game_jam_1/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/SewerynKaminski/cpp-best-practices_game_jam_1/branch/main/graph/badge.svg)](https://codecov.io/gh/SewerynKaminski/cpp-best-practices_game_jam_1)
