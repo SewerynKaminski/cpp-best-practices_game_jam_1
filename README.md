@@ -6,7 +6,7 @@
 [![Language grade: C++](https://img.shields.io/lgtm/grade/cpp/github/SewerynKaminski/cpp-best-practices_game_jam_1)](https://lgtm.com/projects/g/SewerynKaminski/cpp-best-practices_game_jam_1/context:cpp)
 
 ## About cpp_best_practices_game_jam_one
-Game Jam One
+Game Jam One - "Round"
 
 
 ## More Details
