@@ -52,12 +52,10 @@ struct GameBoard {
     std::string &get_string ( std::size_t x, std::size_t y ) {
         return get_string ( {x, y} );
     }
-  }
 
     bool& operator[] ( const Point& p ) {
         return values.at ( p.x + p.y * width );
     }
-  }
 
     bool operator[] ( const Point& p ) const {
         return values.at ( p.x + p.y * width );
@@ -86,7 +84,6 @@ struct GameBoard {
             gameboard[ p ] = true;
         } );
     }
-  }
 
     /// Toggle one LED
     void toggle ( const Point& p ) {
@@ -118,9 +115,6 @@ struct GameBoard {
 
         return result;
     }
-
-    return true;
-  }
 };
 
 //-----------------------------------------------------------------------------//
@@ -204,8 +198,6 @@ private:
 
         return led ( ) | reflect ( box_ );
     }
-    return buttons;
-  };
 
     bool OnEvent ( Event event ) override {
         if ( !CaptureMouse ( event ) )
@@ -221,9 +213,6 @@ private:
         }
         return false;
     }
-    rows.push_back ( ftxui::hbox ( { quit_button->Render ( ) } ) );
-    return ftxui::vbox ( std::move ( rows ) );
-  };
 
     bool OnMouseEvent ( Event event ) {
         hovered_ = box_.Contain ( event.mouse().x, event.mouse().y );
@@ -303,7 +292,6 @@ void game ( ) {
             moves_text += " Solved!";
         }
     };
-  }
 
     const auto make_leds = [&] {
         std::vector<Component> leds;
