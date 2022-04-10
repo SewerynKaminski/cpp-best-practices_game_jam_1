@@ -2,12 +2,19 @@
 #include <functional>
 #include <iostream>
 #include <random>
+#include <ranges>
+#include <chrono>
 
+//-----------------------------------------------------------------------------//
 #include <docopt/docopt.h>
 #include <ftxui/component/captured_mouse.hpp>// for ftxui
 #include <ftxui/component/component.hpp>// for Slider
+#include <ftxui/component/component_base.hpp>
 #include <ftxui/component/screen_interactive.hpp>// for ScreenInteractive
-#include <spdlog/spdlog.h>
+#include "ftxui/component/event.hpp"           // for Event
+#include "ftxui/component/mouse.hpp"  // for Mouse, Mouse::Left, Mouse::Middle, Mouse::None, Mouse::Pressed, Mouse::Released, Mouse::Right, Mouse::WheelDown, Mouse::WheelUp
+#include "ftxui/component/component_options.hpp"
+#include <spdlog/spdlog.h>// for logging
 
 // This file will be generated automatically when you run the CMake configuration step.
 // It creates a namespace called `cpp_best_practices_game_jam_one`.
@@ -15,332 +22,518 @@
 #include <internal_use_only/config.hpp>
 
 //-----------------------------------------------------------------------------//
-template<std::size_t Width, std::size_t Height> struct GameBoard {
-  static constexpr auto width = Width;
-  static constexpr auto height = Height;
-
-  std::array<std::array<std::string, height>, width> strings;
-  std::array<std::array<bool, height>, width> values{};
-
-  std::size_t move_count{ 0 };
-
-  std::string &get_string(std::size_t x, std::size_t y) { return strings.at(x).at(y); }
-
-  void set(std::size_t x, std::size_t y, bool new_value)  {
-    get(x, y) = new_value;
-
-    if (new_value) {
-      get_string(x, y) = " ON";
-    } else {
-      get_string(x, y) = "OFF";
-    }
-  }
-
-  void visit ( auto visitor ) {
-    for ( auto x = 0ULL; x < width; ++x) {
-      for ( auto y = 0ULL; y < height; ++y) {
-          visitor ( x, y, *this );
-      }
-    }
-  }
-
-  [[nodiscard]] bool get ( std::size_t x, std::size_t y ) const {
-      return values.at(x).at(y);
-  }
-
-  [[nodiscard]] bool &get ( std::size_t x, std::size_t y ) {
-      return values.at(x).at(y);
-  }
-
-  GameBoard ( ) {
-    visit ( [](const auto x, const auto y, auto &gameboard) { gameboard.set ( x, y, true ); } );
-  }
-
-  void update_strings( ) {
-    for ( auto x = 0ULL; x < width; x++ ) {
-      for ( auto y = 0ULL; y < height; y++ ) {
-          set ( x, y, get( x, y ) );
-      }
-    }
-  }
-
-  void toggle ( std::size_t x, std::size_t y ) {
-      set ( x, y, !get ( x, y ) );
-  }
-
-  void press ( std::size_t x, std::size_t y ) {
-    ++move_count;
-    toggle ( x, y );
-    if ( x > 0 ) { toggle ( x - 1, y ); }
-    if ( y > 0 ) { toggle ( x, y - 1 ); }
-    if ( x < width - 1) { toggle(x + 1, y); }
-    if ( y < height - 1) { toggle(x, y + 1); }
-  }
-
-  [[nodiscard]] bool solved() const {
-    for ( auto x = 0ULL; x < width; x++ ) {
-      for ( auto y = 0ULL; y < height; y++ ) {
-        if ( !get ( x, y ) ) {
-            return false;
-        }
-      }
-    }
-
-    return true;
-  }
-};
+using namespace ftxui;
 
 //-----------------------------------------------------------------------------//
-void consequence_game ( ) {
-  auto screen = ftxui::ScreenInteractive::TerminalOutput();
-
-  GameBoard<3, 3> gb;
-
-  std::string quit_text;
-
-  const auto update_quit_text = [&quit_text] ( const auto &game_board ) {
-    quit_text = fmt::format ( "Quit ({} moves)", game_board.move_count );
-    if ( game_board.solved() ) { quit_text += " Solved!"; }
-  };
-
-  const auto make_buttons = [&] {
-    std::vector<ftxui::Component> buttons;
-    for ( auto x = 0ULL; x < gb.width; x++ ) {
-      for ( auto y = 0ULL; y < gb.height; y++ ) {
-        buttons.push_back ( ftxui::Button ( &gb.get_string ( x, y ), [=, &gb] {
-          if ( !gb.solved ( ) ) {
-              gb.press(x, y);
-          }
-          update_quit_text ( gb );
-        } ) );
-      }
-    }
-    return buttons;
-  };
-
-  auto buttons = make_buttons ( );
-  auto quit_button = ftxui::Button ( &quit_text, screen.ExitLoopClosure ( ) );
-  auto make_layout = [&] {
-    std::vector<ftxui::Element> rows;
-    auto idx = 0ULL;
-    for ( auto x = 0ULL; x < gb.width; x++ ) {
-      std::vector<ftxui::Element> row;
-      for ( auto y = 0ULL; y < gb.height; y++ ) {
-        row.push_back ( buttons[idx]->Render ( ) );
-        idx++;
-      }
-      rows.push_back ( ftxui::hbox ( std::move ( row ) ) );
-    }
-    rows.push_back ( ftxui::hbox ( { quit_button->Render ( ) } ) );
-    return ftxui::vbox ( std::move ( rows ) );
-  };
-
-  static constexpr auto randomization_iterations = 100;
-  static constexpr auto random_seed = 42;
-
-  std::mt19937 gen32 { random_seed };// NOLINT fixed seed
-  std::uniform_int_distribution<std::size_t> x(0, gb.width - 1);
-  std::uniform_int_distribution<std::size_t> y(0, gb.height - 1);
-
-  for (int i = 0; i < randomization_iterations; i++ ) {
-      gb.press ( x ( gen32 ), y ( gen32 ) );
-  }
-  gb.move_count = 0;
-  update_quit_text ( gb );
-
-  auto all_buttons = buttons;
-  all_buttons.push_back ( quit_button );
-  auto container = ftxui::Container::Horizontal ( all_buttons );
-  auto renderer = ftxui::Renderer ( container, make_layout );
-
-  screen.Loop ( renderer );
+template<class T>
+constexpr auto Range ( const T a, const T b ) {
+    return std::views::iota ( a, b );
 }
 
 //-----------------------------------------------------------------------------//
-struct Color {
-  std::uint8_t R{};
-  std::uint8_t G{};
-  std::uint8_t B{};
+template<std::size_t Width, std::size_t Height>
+struct GameBoard {
+    static constexpr auto width = Width;
+    static constexpr auto height = Height;
+
+    struct Point {
+        std::size_t x, y;
+        Point operator+ ( const Point& o ) const {
+            return {x + o.x, y + o.y};
+        }
+        Point operator- ( const Point& o ) const {
+            return {x - o.x, y - o.y};
+        }
+    };
+
+    std::array < bool, height * width > values{};
+    std::size_t move_count{ 0 };
+
+    std::string &get_string ( std::size_t x, std::size_t y ) {
+        return get_string ( {x, y} );
+    }
+
+    bool& operator[] ( const Point& p ) {
+        return values.at ( p.x + p.y * width );
+    }
+
+    bool operator[] ( const Point& p ) const {
+        return values.at ( p.x + p.y * width );
+    }
+
+    void visit ( auto visitor ) {
+        for ( auto x : Range ( 0UL, width ) ) {
+            for ( auto y : Range ( 0UL, height ) ) {
+                const Point p { x, y };
+                visitor ( p, *this );
+            }
+        }
+    }
+
+    void visit ( auto visitor ) const {
+        for ( auto x : Range ( 0UL, width ) ) {
+            for ( auto y : Range ( 0UL, height ) ) {
+                const Point p { x, y };
+                if ( visitor ( p, *this ) ) break;
+            }
+        }
+    }
+
+    GameBoard ( ) {
+        visit ( [ = ] ( const auto & p, auto & gameboard ) {
+            gameboard[ p ] = true;
+        } );
+    }
+
+    /// Toggle one LED
+    void toggle ( const Point& p ) {
+        if ( p.x >= width ) return;
+        if ( p.y >= height ) return;
+        ( *this ) [ p ] ^= true;
+    }
+
+    /// Togle cross (5 LEDs)
+    void press ( const Point& p ) {
+        ++move_count;
+        toggle ( p );
+        toggle ( p - Point{ 1, 0 } );
+        toggle ( p - Point{ 0, 1 } );
+        toggle ( p + Point{ 1, 0 } );
+        toggle ( p + Point{ 0, 1 } );
+    }
+
+    [[nodiscard]] bool solved() const {
+        bool one = ( *this ) [ {1, 1} ];
+        auto result = true;
+        visit ( [ & ] ( const auto & p, const auto & gb ) -> bool {
+            if ( one != gb[ p ] ) {
+                result = false;
+                return true; // break
+            }
+            return false;   // go on
+        } );
+
+        return result;
+    }
+};
+
+//-----------------------------------------------------------------------------//
+class LEDBase : public ComponentBase {
+public:
+    LEDBase ( bool* state, std::function<void() > on_click )
+        : state_ ( state ), hovered_ ( false ), on_change ( on_click ) {
+    }
+private:
+    // Component implementation.
+    Element Render() override {
+        //bool is_focused = Focused();
+        //bool is_active = Active();
+
+        static auto dp = [] ( const Color & c, const Color & bgc ) {
+            //return text ( "▄" ) | color ( c ) | bgcolor ( bgc );
+            return text ( "▀" ) | color ( c ) | bgcolor ( bgc );
+        };
+
+        static constexpr uint8_t pattern_on[8 * 8] = {
+            0,  10, 20, 20, 20, 20, 10,  0,
+            10, 20, 89, 89, 89, 75, 20, 10,
+            20, 89, 99, 99, 89, 89, 75, 20,
+            20, 89, 99, 99, 89, 89, 75, 20,
+            20, 89, 89, 89, 89, 89, 75, 20,
+            20, 75, 89, 89, 89, 75, 75, 20,
+            10, 20, 75, 75, 75, 75, 20, 10,
+            0,  10, 20, 20, 20, 20, 10,  0,
+        };
+
+        static constexpr uint8_t pattern_off[8 * 8] = {
+            0,  0,  0,  0,  0,  0,  0,  0,
+            0,  0, 30, 30, 30, 10,  0,  0,
+            0, 30, 36, 36, 30, 30, 10,  0,
+            0, 30, 36, 36, 30, 30, 10,  0,
+            0, 30, 30, 30, 30, 30, 10,  0,
+            0, 10, 30, 30, 30, 10, 10,  0,
+            0,  0, 10, 10, 10, 10,  0,  0,
+            0,  0,  0,  0,  0,  0,  0,  0,
+        };
+
+        static const double T = 0.3;
+
+        std::chrono::time_point now = std::chrono::steady_clock::now();
+        std::chrono::duration<double> d = now - old_;
+        old_ = now;
+        startup_ = *state_
+                   ? fmin ( T, startup_ + d.count() )
+                   : fmax ( 0.0, startup_ - d.count() );
+        auto r = startup_ / T;
+
+        auto c = [&] ( int i ) {
+            uint8_t v = uint8_t ( r * pattern_on[i] + ( 1.0 - r ) * pattern_off[i] );
+            v = uint8_t ( v * 255 / 100 );
+            return Color ( v * !hovered_,
+                           v,
+                           v * !hovered_ );
+        };
+
+        auto line = [&] ( int l ) {
+            return hbox ( {
+                dp ( c ( l * 8 + 0 ), c ( l * 8 + 8 ) ),
+                dp ( c ( l * 8 + 1 ), c ( l * 8 + 9 ) ),
+                dp ( c ( l * 8 + 2 ), c ( l * 8 + 10 ) ),
+                dp ( c ( l * 8 + 3 ), c ( l * 8 + 11 ) ),
+                dp ( c ( l * 8 + 4 ), c ( l * 8 + 12 ) ),
+                dp ( c ( l * 8 + 5 ), c ( l * 8 + 13 ) ),
+                dp ( c ( l * 8 + 6 ), c ( l * 8 + 14 ) ),
+                dp ( c ( l * 8 + 7 ), c ( l * 8 + 15 ) ),
+            } );
+        };
+
+        auto led  = [&] ( ) {
+            return vbox ( {
+                line ( 0 ),
+                line ( 2 ),
+                line ( 4 ),
+                line ( 6 ),
+            } );
+        };
+
+        return led ( ) | reflect ( box_ );
+    }
+
+    bool OnEvent ( Event event ) override {
+        if ( !CaptureMouse ( event ) )
+            return false;
+
+        if ( event.is_mouse() )
+            return OnMouseEvent ( event );
+
+        if ( event == Event::Character ( ' ' ) || event == Event::Return ) {
+            //option_->on_change();
+            //TakeFocus();
+            return true;
+        }
+        return false;
+    }
+
+    bool OnMouseEvent ( Event event ) {
+        hovered_ = box_.Contain ( event.mouse().x, event.mouse().y );
+
+        if ( !CaptureMouse ( event ) )
+            return false;
+
+        if ( !hovered_ ) {
+            before_pressed_ = false;
+            return false;
+        }
+
+        if ( event.mouse().button == Mouse::Left ) {
+            if ( event.mouse().motion == Mouse::Pressed && !before_pressed_ ) {
+                before_pressed_ = true;
+                on_change();
+                return true;
+            }
+            if ( event.mouse().motion == Mouse::Released ) {
+                before_pressed_ = false;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool Focusable() const final {
+        return false;
+    }
+
+    bool* state_ = nullptr;
+    bool hovered_ = false;
+    Box box_;
+    std::function<void() > on_change;
+    bool before_pressed_ = false;
+    double startup_ = 0;
+    std::chrono::time_point<std::chrono::steady_clock> old_;
+};
+
+//-----------------------------------------------------------------------------//
+Component LED ( bool* b, std::function<void() > on_click ) {
+    return Make<LEDBase> ( b, on_click );
+}
+
+//-----------------------------------------------------------------------------//
+uint64_t random_seed = 0;
+
+//-----------------------------------------------------------------------------//
+auto header = hbox ( {
+    text ( fmt::format ( "LightsRound v.{}.{}.{}",
+                         cpp_best_practices_game_jam_one::cmake::project_version_major,
+                         cpp_best_practices_game_jam_one::cmake::project_version_minor,
+                         cpp_best_practices_game_jam_one::cmake::project_version_patch ) ),
+                                                         filler ( ),
+                                                         text ( "Seweryn Kamiński" ),
+} );
+
+auto footer = hbox ( {
+    text ( "2022 - Cpp best practices" ),
+         filler(),
+         text ( "Game Jam 1" )
+} );
+
+//-----------------------------------------------------------------------------//
+void game ( ) {
+    auto screen = ScreenInteractive::Fullscreen();
+
+    GameBoard<9, 9> gb;
+
+    std::string moves_text;
+    std::string debug_text;
+
+    const auto update_moves_text = [&moves_text] ( const auto & game_board ) {
+        moves_text = fmt::format ( "Moves: {}", game_board.move_count );
+        if ( game_board.solved() ) {
+            moves_text += " Solved!";
+        }
+    };
+
+    const auto make_leds = [&] {
+        std::vector<Component> leds;
+        gb.visit ( [&] ( const auto & p, auto & gbo ) {
+            leds.push_back ( LED ( &gbo[p], [ =, &gbo] {
+                if ( !gbo.solved ( ) ) {
+                    gbo.press ( p );
+                }
+                update_moves_text ( gbo );
+            } ) );
+        } );
+        return leds;
+    };
+
+    auto leds = make_leds ( );
+    auto quit_button = Button ( "  Back  ", screen.ExitLoopClosure ( ) );
+    auto make_layout = [&] {
+        std::vector<Element> rows;
+        for ( auto x : Range ( 0UL, gb.width ) ) {
+            std::vector<Element> row;
+            for ( auto y : Range ( 0UL, gb.height ) ) {
+                row.push_back ( leds[y * gb.width + x]->Render() );
+            }
+            rows.push_back ( hbox ( std::move ( row ) ) );
+        }
+
+        return vbox ( { header,
+                        filler(),
+                        hbox ( {filler(), text ( moves_text ), filler() } ),
+                        hbox ( {filler(), vbox ( std::move ( rows ) ) | border, filler() } ),
+                        filler(),
+                        hbox ( quit_button->Render ( ) ),
+                        footer,
+                      } );
+    };
+
+    static constexpr auto randomization_iterations = 100;
+
+    std::mt19937 gen32;
+    gen32.seed ( random_seed );
+    std::uniform_int_distribution<std::size_t> x ( 0, gb.width - 1 );
+    std::uniform_int_distribution<std::size_t> y ( 0, gb.height - 1 );
+
+    for ( int i = 0; i < randomization_iterations; i++ ) {
+        gb.press ( {x ( gen32 ), y ( gen32 ) } );
+    }
+    gb.move_count = 0;
+    update_moves_text ( gb );
+
+    auto all_buttons = leds;
+    all_buttons.push_back ( quit_button );
+    auto container = Container::Horizontal ( all_buttons );
+    auto renderer = Renderer ( container, make_layout );
+
+    std::atomic<bool> refresh_ui_continue = true;
+    std::thread refresh_ui ( [&] {
+        while ( refresh_ui_continue ) {
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for ( 0.02s ); // NOLINT magic numbers
+            screen.PostEvent ( Event::Custom );
+        }
+    } );
+
+    screen.Loop ( renderer );
+    refresh_ui_continue = false;
+    refresh_ui.join();
+}
+
+//-----------------------------------------------------------------------------//
+void seed ( ) {
+    auto screen = ScreenInteractive::Fullscreen();
+
+    std::string start_text { " START " };
+    std::string back_text { "  BACK  " };
+    std::string input_text {};
+
+    auto start_button = Button ( &start_text, [&]() {
+        random_seed = std::hash<std::string> {} ( input_text );
+        game();
+    } );
+    auto back_button = Button ( &back_text, screen.ExitLoopClosure ( ) );
+    auto seed_input = Input ( &input_text, "SEED" );
+    std::vector<Component> buttons;
+    auto make_layout = [&] {
+        return vbox ( {
+            header,
+            filler(),
+            hbox ( {
+                seed_input->Render ( ) | border,
+            } ),
+            filler(),
+            hbox ( {
+                back_button->Render ( ),
+                filler(),
+                start_button->Render ( )
+            } ),
+            footer,
+        } );
+    };
+
+    buttons.push_back ( start_button );
+    buttons.push_back ( seed_input );
+    buttons.push_back ( back_button );
+    auto container = Container::Horizontal ( buttons );
+    auto renderer = Renderer ( container, make_layout );
+
+    screen.Loop ( renderer );
+}
+
+//-----------------------------------------------------------------------------//
+void menu() {
+    auto screen = ScreenInteractive::Fullscreen();
+
+    std::string start_text{ "   START   "};
+    std::string seed_text { "   SEED    "};
+    std::string quit_text { "   QUIT    "};
+
+    auto start_button = Button ( &start_text, []() {
+        random_seed = uint64_t ( std::chrono::high_resolution_clock::now().time_since_epoch().count() );
+        game ();
+    } );
+
+    auto seed_button = Button ( &seed_text, seed );
+    auto quit_button = Button ( &quit_text, screen.ExitLoopClosure ( ) );
+
+    std::vector<Component> buttons;
+    auto make_layout = [&] {
+        return vbox ( {
+            header,
+            filler(),
+            hbox ( {
+                filler(),
+                start_button->Render ( ),
+                filler()
+            } ),
+            hbox ( {
+                filler(),
+                seed_button->Render ( ),
+                filler()
+            } ),
+            hbox ( {
+                filler(),
+                quit_button->Render ( ),
+                filler()
+            } ),
+            filler(),
+            footer,
+        } );
+    };
+
+    buttons.push_back ( start_button );
+    buttons.push_back ( seed_button );
+    buttons.push_back ( quit_button );
+    auto container = Container::Horizontal ( buttons );
+    auto renderer = Renderer ( container, make_layout );
+
+    screen.Loop ( renderer );
+}
+
+//-----------------------------------------------------------------------------//
+struct ColorRGB {
+    std::uint8_t R, G, B;
 };
 
 //-----------------------------------------------------------------------------//
 // A simple way of representing a bitmap on screen using only characters
-struct Bitmap : ftxui::Node {
-  Bitmap ( std::size_t width, std::size_t height )// NOLINT same typed parameters adjacent to each other
-    : width_( width ), height_( height )
-  {}
+struct Bitmap : Node {
+    Bitmap ( std::size_t width, std::size_t height ) // NOLINT same typed parameters adjacent to each other
+        : width_ ( width ), height_ ( height )
+    {}
 
-  Color& at ( std::size_t x, std::size_t y ) {
-      return pixels.at ( width_ * y + x );
-  }
-
-  void ComputeRequirement ( ) override {
-    requirement_ = ftxui::Requirement{
-      .min_x = static_cast<int>(width_), .min_y = static_cast<int>(height_ / 2), .selected_box{ 0, 0, 0, 0 }
-    };
-  }
-
-  void SetBox ( ftxui::Box box ) override {
-      box_ = box;
-  }
-
-  void Render ( ftxui::Screen &screen ) override {
-    for ( auto x = 0ULL; x < width_; x++ ) {
-      for ( auto y = 0ULL; y < height_ / 2; y++ ) {
-        auto &p = screen.PixelAt ( box_.x_min + static_cast<int>( x ), box_.y_min + static_cast<int>( y ) );
-        p.character = "▄";
-        const auto &top_color = at ( x, y * 2 );
-        const auto &bottom_color = at ( x, y * 2 + 1 );
-        p.background_color = ftxui::Color{ top_color.R, top_color.G, top_color.B };
-        p.foreground_color = ftxui::Color{ bottom_color.R, bottom_color.G, bottom_color.B };
-      }
+    ColorRGB& at ( std::size_t x, std::size_t y ) {
+        return pixels.at ( width_ * y + x );
     }
-  }
 
-  [[nodiscard]] auto width ( ) const noexcept { return width_; }
+    void ComputeRequirement ( ) override {
+        requirement_ = Requirement{
+            .min_x = static_cast<int> ( width_ ),
+            .min_y = static_cast<int> ( height_ / 2 ),
+            .selected_box{ 0, 0, 0, 0 }
+        };
+    }
 
-  [[nodiscard]] auto height ( ) const noexcept { return height_; }
+    void SetBox ( Box box ) override {
+        box_ = box;
+    }
 
-  [[nodiscard]] auto &data ( ) noexcept { return pixels; }
+    void Render ( Screen &screen ) override {
+        for ( auto x : Range ( 0UL, width_ ) ) {
+            for ( auto y : Range ( 0UL,  height_ ) ) {
+                auto &p = screen.PixelAt ( box_.x_min + static_cast<int> ( x ), box_.y_min + static_cast<int> ( y ) );
+                p.character = "▄";// "▀"
+                const auto &top_color = at ( x, y * 2 );
+                const auto &bottom_color = at ( x, y * 2 + 1 );
+                p.background_color = Color{ top_color.R, top_color.G, top_color.B };
+                p.foreground_color = Color{ bottom_color.R, bottom_color.G, bottom_color.B };
+            }
+        }
+    }
 
+    [[nodiscard]] auto width ( ) const noexcept {
+        return width_;
+    }
+    [[nodiscard]] auto height ( ) const noexcept {
+        return height_;
+    }
+    [[nodiscard]] auto &data ( ) noexcept {
+        return pixels;
+    }
 private:
-  std::size_t width_;
-  std::size_t height_;
-
-  std::vector<Color> pixels = std::vector<Color> ( width_ * height_, Color{} );
+    std::size_t width_;
+    std::size_t height_;
+    std::vector<ColorRGB> pixels = std::vector<ColorRGB> ( width_ * height_, ColorRGB{} );
 };
 
 //-----------------------------------------------------------------------------//
-void game_iteration_canvas ( ) {
-  // this should probably have a `bitmap` helper function that does what you expect
-  // similar to the other parts of FTXUI
-  auto bm = std::make_shared<Bitmap> ( 50, 50 );// NOLINT magic numbers
-  auto small_bm = std::make_shared<Bitmap> ( 6, 6 );// NOLINT magic numbers
-
-  double fps = 0;
-
-  std::size_t max_row = 0;
-  std::size_t max_col = 0;
-
-  // to do, add total game time clock also, not just current elapsed time
-  auto game_iteration = [&]( const std::chrono::steady_clock::duration elapsed_time ) {
-    // in here we simulate however much game time has elapsed. Update animations,
-    // run character AI, whatever, update stats, etc
-
-    // this isn't actually timing based for now, it's just updating the display however fast it can
-    fps = 1.0/ (static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(elapsed_time).count())
-             / 1'000'000.0);// NOLINT magic numbers
-
-    for ( auto row = 0ULL; row < max_row; row++ ) {
-      for ( auto col = 0ULL; col < bm->width(); col++ ) {
-          (bm->at(col, row).R)++;
-      }
-    }
-
-    for ( auto row = 0ULL; row < bm->height(); row++ ) {
-      for ( auto col = 0ULL; col < max_col; col++ ) {
-          (bm->at(col, row).G)++;
-      }
-    }
-
-    // for the fun of it, let's have a second window doing interesting things
-    auto &small_bm_pixel =
-      small_bm->data().at ( static_cast<std::size_t>( elapsed_time.count ( ) ) % small_bm->data().size ( ) );
-
-    switch ( elapsed_time.count() % 3 ) {
-        case 0:
-            small_bm_pixel.R += 11;// NOLINT Magic Number
-            break;
-        case 1:
-            small_bm_pixel.G += 11;// NOLINT Magic Number
-            break;
-        case 2:
-            small_bm_pixel.B += 11;// NOLINT Magic Number
-            break;
-    }
-
-    max_row++;
-    if ( max_row >= bm->height() ) { max_row = 0; }
-    max_col++;
-    if ( max_col >= bm->width() ) { max_col = 0; }
-  };
-
-  auto screen = ftxui::ScreenInteractive::TerminalOutput ( );
-
-  int counter = 0;
-
-  auto last_time = std::chrono::steady_clock::now ( );
-
-  auto make_layout = [&] {
-    // This code actually processes the draw event
-    const auto new_time = std::chrono::steady_clock::now ( );
-
-    counter++;
-    // we will dispatch to the game_iteration function, where the work happens
-    game_iteration ( new_time - last_time );
-    last_time = new_time;
-
-    // now actually draw the game elements
-    return ftxui::hbox ( { bm | ftxui::border,
-      ftxui::vbox ( { ftxui::text ( "Frame: " + std::to_string ( counter ) ),
-        ftxui::text ( "FPS: " + std::to_string ( fps ) ),
-        small_bm | ftxui::border } ) } );
-  };
-
-  auto container = ftxui::Container::Vertical ( {} );
-  auto renderer = ftxui::Renderer ( container, make_layout );
-  std::atomic<bool> refresh_ui_continue = true;
-
-  // This thread exists to make sure that the event queue has an event to
-  // process at approximately a rate of 30 FPS
-  std::thread refresh_ui ( [&] {
-    while ( refresh_ui_continue ) {
-      using namespace std::chrono_literals;
-      std::this_thread::sleep_for ( 1.0s / 30.0 );// NOLINT magic numbers
-      screen.PostEvent ( ftxui::Event::Custom );
-    }
-  });
-
-  screen.Loop ( renderer );
-
-  refresh_ui_continue = false;
-  refresh_ui.join ( );
-}
-
-//-----------------------------------------------------------------------------//
 int main ( int argc, const char **argv ) {
-  try {
-    static constexpr auto USAGE =
-    R"(intro
+    try {
+        static constexpr auto USAGE =
+            R"(intro
 
  Usage:
-       intro turn_based
-       intro loop_based
+       intro
        intro (-h | --help)
        intro --version
  Options:
        -h --help     Show this screen.
        --version     Show version.
-    )";
+        )";
 
-    std::map<std::string, docopt::value> args = docopt::docopt(USAGE,
-      { std::next(argv), std::next(argv, argc) },
-      true,// show help if requested
-      fmt::format("{} {}.{}.{}",
-        cpp_best_practices_game_jam_one::cmake::project_name,
-        cpp_best_practices_game_jam_one::cmake::project_version_major,
-        cpp_best_practices_game_jam_one::cmake::project_version_minor,
-        cpp_best_practices_game_jam_one::cmake::project_version_patch));
-        //cpp_best_practices_game_jam_one::cmake::project_version));// version string, acquired
-                                            // from config.hpp via CMake
-
-    if ( args["turn_based"].asBool() ) {
-        consequence_game();
-    } else {
-        game_iteration_canvas();
-    }
-
-    //    consequence_game();
+        std::map<std::string, docopt::value> args = docopt::docopt ( USAGE,
+        { std::next ( argv ), std::next ( argv, argc ) },
+        true,// show help if requested
+        fmt::format ( "{} {}.{}.{}",
+                      cpp_best_practices_game_jam_one::cmake::project_name,
+                      cpp_best_practices_game_jam_one::cmake::project_version_major,
+                      cpp_best_practices_game_jam_one::cmake::project_version_minor,
+                      cpp_best_practices_game_jam_one::cmake::project_version_patch
+                    )
+                                                                   );
+        // from config.hpp via CMake
+        menu();
     } catch ( const std::exception &e ) {
         fmt::print ( "Unhandled exception in main: {}", e.what ( ) );
     }
