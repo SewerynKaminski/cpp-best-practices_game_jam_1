@@ -25,7 +25,7 @@
 using namespace ftxui;
 
 //-----------------------------------------------------------------------------//
-template<class T>
+template<typename T>
 constexpr auto Range ( const T a, const T b ) {
     return std::views::iota ( a, b );
 }
