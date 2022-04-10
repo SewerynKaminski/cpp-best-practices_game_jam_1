@@ -164,7 +164,7 @@ private:
         auto c = [&] ( std::size_t i ) {
             auto v = uint8_t ( r * pattern_on.at ( i ) + ( 1.0 - r ) * pattern_off.at ( i ) );
             v = uint8_t ( v * UCHAR_MAX / 100 );    // NOLINT magic numbers
-            return Color ( v * int ( !hovered_ ), v, v * int ( !hovered_ ) );
+            return Color ( v * uint8_t ( !hovered_ ), v, v * uint8_t ( !hovered_ ) );
         };
 
         auto line = [&] ( std::size_t l ) {
@@ -201,11 +201,6 @@ private:
             return OnMouseEvent ( event );
         }
 
-        if ( event == Event::Character ( ' ' ) || event == Event::Return ) {
-            // option_->on_change();
-            // TakeFocus();
-            return true;
-        }
         return false;
     }
 
@@ -303,10 +298,10 @@ void game ( uint64_t random_seed ) {
     auto quit_button = Button ( "  Back  ", screen.ExitLoopClosure() );
     auto make_layout = [&] {
         std::vector<Element> rows;
-        rows.reserve ( 9 );
+        rows.reserve ( gb.width );
         for ( auto x = 0UL; x < gb.width; x++ ) {
             std::vector<Element> row;
-            row.reserve ( 9 );
+            row.reserve ( gb.height );
             for ( auto y = 0UL; y < gb.height; y++ ) {
                 row.push_back ( leds[y * gb.width + x]->Render() );
             }
@@ -326,8 +321,8 @@ void game ( uint64_t random_seed ) {
 
     static constexpr auto randomization_iterations = 100;
 
-    std::mt19937 gen32;
-    gen32.seed ( random_seed );
+    std::mt19937 gen32{random_seed};
+    //gen32.seed ( random_seed );
     std::uniform_int_distribution<std::size_t> x ( 0, gb.width - 1 );
     std::uniform_int_distribution<std::size_t> y ( 0, gb.height - 1 );
 
