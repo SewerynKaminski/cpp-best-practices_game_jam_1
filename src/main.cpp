@@ -514,9 +514,9 @@ int main ( int argc, const char **argv ) {
             R"(intro
 
  Usage:
-       intro
-       intro (-h | --help)
-       intro --version
+       lightround
+       lightround (-h | --help)
+       lightround --version
  Options:
        -h --help     Show this screen.
        --version     Show version.
