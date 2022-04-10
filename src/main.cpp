@@ -3,6 +3,7 @@
 #include <functional>
 #include <iostream>
 #include <random>
+#include <limits>
 
 //-----------------------------------------------------------------------------//
 #include "ftxui/component/component_options.hpp"
@@ -40,10 +41,6 @@ template<std::size_t Width, std::size_t Height> struct GameBoard {
 
     std::array<bool, height * width> values{};
     std::size_t move_count{ 0 };
-
-    std::string &get_string ( std::size_t x, std::size_t y ) {
-        return get_string ( { x, y } );
-    }
 
     bool &operator[] ( const Point &p ) {
         return values.at ( p.x + p.y * width );
@@ -131,7 +128,7 @@ private:
             return text ( "▀" ) | color ( c ) | bgcolor ( bgc );
         };
 
-        static constexpr std::array<uint8_t, 8UL * 8UL> pattern_on {
+        static constexpr std::array<uint8_t, std::size_t ( 8 * 8 ) > pattern_on {
             0, 10, 20, 20, 20, 20, 10, 0,
             10, 20, 89, 89, 89, 75, 20, 10,
             20, 89, 99, 99, 89, 89, 75, 20,
@@ -142,7 +139,7 @@ private:
             0, 10, 20, 20, 20, 20, 10, 0,
         };
 
-        static constexpr std::array<uint8_t, 8UL * 8UL> pattern_off {
+        static constexpr std::array<uint8_t, std::size_t ( 8 * 8 ) > pattern_off {
             0,  0,  0,  0,  0,  0, 0,  0,
             0,  0, 30, 30, 30, 10, 0,  0,
             0, 30, 36, 36, 30, 30, 10, 0,
@@ -163,7 +160,7 @@ private:
 
         auto c = [&] ( std::size_t i ) {
             auto v = uint8_t ( r * pattern_on.at ( i ) + ( 1.0 - r ) * pattern_off.at ( i ) );
-            v = uint8_t ( v * UCHAR_MAX / 100 );    // NOLINT magic numbers
+            v = uint8_t ( v * std::numeric_limits<uint8_t>::max() / 100 );    // NOLINT magic numbers
             return Color ( v * uint8_t ( !hovered_ ), v, v * uint8_t ( !hovered_ ) );
         };
 
@@ -442,8 +439,8 @@ struct Bitmap : Node {
 
     void Render ( Screen &screen ) override
     {
-        for ( auto x = 0UL; x < width_; x++ ) {
-            for ( auto y = 0UL; y < height_; y++ ) {
+        for ( auto x = 0ULL; x < width_; x++ ) {
+            for ( auto y = 0ULL; y < height_; y++ ) {
                 auto &p = screen.PixelAt ( box_.x_min + static_cast<int> ( x ), box_.y_min + static_cast<int> ( y ) );
                 p.character = "▄";// "▀"
                 const auto &top_color = at ( x, y * 2 );
