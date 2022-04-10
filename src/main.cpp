@@ -246,7 +246,7 @@ private:
 };
 
 //-----------------------------------------------------------------------------//
-Component LED ( bool *b, std::function<void() > on_click ) {
+Component LED ( bool *b, const std::function<void() >& on_click ) {
     return Make<LEDBase> ( b, on_click );
 }
 
