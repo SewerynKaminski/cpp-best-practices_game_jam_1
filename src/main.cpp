@@ -24,13 +24,11 @@
 using namespace ftxui;
 
 //-----------------------------------------------------------------------------//
-template<std::size_t Width, std::size_t Height> struct GameBoard
-{
+template<std::size_t Width, std::size_t Height> struct GameBoard {
     static constexpr auto width = Width;
     static constexpr auto height = Height;
 
-    struct Point
-    {
+    struct Point {
         std::size_t x, y;
         Point operator+ ( const Point &o ) const {
             return { x + o.x, y + o.y };
@@ -55,8 +53,7 @@ template<std::size_t Width, std::size_t Height> struct GameBoard
         return values.at ( p.x + p.y * width );
     }
 
-    void visit ( auto visitor )
-    {
+    void visit ( auto visitor ) {
         for ( auto x = 0UL; x < width; x++ ) {
             for ( auto y = 0UL; y < height; y++ ) {
                 const Point p{ x, y };
@@ -65,8 +62,7 @@ template<std::size_t Width, std::size_t Height> struct GameBoard
         }
     }
 
-    void visit ( auto visitor ) const
-    {
+    void visit ( auto visitor ) const {
         for ( auto x = 0UL; x < width; x++ ) {
             for ( auto y = 0UL; y < height; y++ ) {
                 const Point p{ x, y };
@@ -77,16 +73,14 @@ template<std::size_t Width, std::size_t Height> struct GameBoard
         }
     }
 
-    GameBoard()
-    {
+    GameBoard() {
         visit ( [ = ] ( const auto & p, auto & gameboard ) {
             gameboard[p] = true;
         } );
     }
 
     /// Toggle one LED
-    void toggle ( const Point &p )
-    {
+    void toggle ( const Point &p ) {
         if ( p.x >= width ) {
             return;
         }
@@ -97,8 +91,7 @@ template<std::size_t Width, std::size_t Height> struct GameBoard
     }
 
     /// Togle cross (5 LEDs)
-    void press ( const Point &p )
-    {
+    void press ( const Point &p ) {
         ++move_count;
         toggle ( p );
         toggle ( p - Point{ 1, 0 } );
@@ -107,8 +100,7 @@ template<std::size_t Width, std::size_t Height> struct GameBoard
         toggle ( p + Point{ 0, 1 } );
     }
 
-    [[nodiscard]] bool solved() const
-    {
+    [[nodiscard]] bool solved() const {
         bool one = ( *this ) [ { 1, 1 }];
         auto result = true;
         visit ( [&] ( const auto & p, const auto & gb ) -> bool {
@@ -139,7 +131,7 @@ private:
             return text ( "▀" ) | color ( c ) | bgcolor ( bgc );
         };
 
-        static constexpr std::array<uint8_t, 8 * 8> pattern_on {
+        static constexpr std::array<uint8_t, 8UL * 8UL> pattern_on {
             0, 10, 20, 20, 20, 20, 10, 0,
             10, 20, 89, 89, 89, 75, 20, 10,
             20, 89, 99, 99, 89, 89, 75, 20,
@@ -150,7 +142,7 @@ private:
             0, 10, 20, 20, 20, 20, 10, 0,
         };
 
-        static constexpr std::array<uint8_t, 8 * 8> pattern_off {
+        static constexpr std::array<uint8_t, 8UL * 8UL> pattern_off {
             0,  0,  0,  0,  0,  0, 0,  0,
             0,  0, 30, 30, 30, 10, 0,  0,
             0, 30, 36, 36, 30, 30, 10, 0,
@@ -170,38 +162,37 @@ private:
         auto r = startup_ / T;
 
         auto c = [&] ( std::size_t i ) {
-            uint8_t v = uint8_t ( r * pattern_on[i] + ( 1.0 - r ) * pattern_off[i] );
+            auto v = uint8_t ( r * pattern_on.at ( i ) + ( 1.0 - r ) * pattern_off.at ( i ) );
             v = uint8_t ( v * UCHAR_MAX / 100 );    // NOLINT magic numbers
-            return Color ( v * !hovered_, v, v * !hovered_ );
+            return Color ( v * int ( !hovered_ ), v, v * int ( !hovered_ ) );
         };
 
         auto line = [&] ( std::size_t l ) {
             return hbox ( {
-                dp ( c ( l * 8 + 0 ), c ( l * 8 + 8 ) ),
-                dp ( c ( l * 8 + 1 ), c ( l * 8 + 9 ) ),
-                dp ( c ( l * 8 + 2 ), c ( l * 8 + 10 ) ),
-                dp ( c ( l * 8 + 3 ), c ( l * 8 + 11 ) ),
-                dp ( c ( l * 8 + 4 ), c ( l * 8 + 12 ) ),
-                dp ( c ( l * 8 + 5 ), c ( l * 8 + 13 ) ),
-                dp ( c ( l * 8 + 6 ), c ( l * 8 + 14 ) ),
-                dp ( c ( l * 8 + 7 ), c ( l * 8 + 15 ) ),
+                dp ( c ( l * 8 + 0 ), c ( l * 8 + 8 ) ),// NOLINT magic numbers
+                dp ( c ( l * 8 + 1 ), c ( l * 8 + 9 ) ),// NOLINT magic numbers
+                dp ( c ( l * 8 + 2 ), c ( l * 8 + 10 ) ),// NOLINT magic numbers
+                dp ( c ( l * 8 + 3 ), c ( l * 8 + 11 ) ),// NOLINT magic numbers
+                dp ( c ( l * 8 + 4 ), c ( l * 8 + 12 ) ),// NOLINT magic numbers
+                dp ( c ( l * 8 + 5 ), c ( l * 8 + 13 ) ),// NOLINT magic numbers
+                dp ( c ( l * 8 + 6 ), c ( l * 8 + 14 ) ),// NOLINT magic numbers
+                dp ( c ( l * 8 + 7 ), c ( l * 8 + 15 ) ),// NOLINT magic numbers
             } );
         };
 
         auto led = [&]() {
             return vbox ( {
-                line ( 0 ),
-                line ( 2 ),
-                line ( 4 ),
-                line ( 6 ),
+                line ( 0 ),// NOLINT magic numbers
+                line ( 2 ),// NOLINT magic numbers
+                line ( 4 ),// NOLINT magic numbers
+                line ( 6 ),// NOLINT magic numbers
             } );
         };
 
         return led() | reflect ( box_ );
     }
 
-    bool OnEvent ( Event event ) override
-    {
+    bool OnEvent ( Event event ) override {
         if ( !CaptureMouse ( event ) ) {
             return false;
         }
@@ -218,11 +209,12 @@ private:
         return false;
     }
 
-    bool OnMouseEvent ( Event event )
-    {
+    bool OnMouseEvent ( Event event ) {
         hovered_ = box_.Contain ( event.mouse().x, event.mouse().y );
 
-        if ( !CaptureMouse ( event ) ) return false;
+        if ( !CaptureMouse ( event ) ) {
+            return false;
+        }
 
         if ( !hovered_ ) {
             before_pressed_ = false;
@@ -244,6 +236,7 @@ private:
         return false;
     }
 
+    [[nodiscard]]
     bool Focusable() const final {
         return false;
     }
@@ -263,10 +256,7 @@ Component LED ( bool *b, std::function<void() > on_click ) {
 }
 
 //-----------------------------------------------------------------------------//
-uint64_t random_seed = 0;
-
-//-----------------------------------------------------------------------------//
-auto header = hbox ( {
+const auto header = hbox ( {
     text ( fmt::format ( "LightsRound v.{}.{}.{}",
                          cpp_best_practices_game_jam_one::cmake::project_version_major,
                          cpp_best_practices_game_jam_one::cmake::project_version_minor,
@@ -275,13 +265,12 @@ auto header = hbox ( {
                                                          text ( "Seweryn Kamiński" ),
 } );
 
-auto footer = hbox ( {
+const auto footer = hbox ( {
     text ( "2022 - Cpp best practices" ), filler(), text ( "Game Jam 1" )
 } );
 
 //-----------------------------------------------------------------------------//
-void game()
-{
+void game ( uint64_t random_seed ) {
     auto screen = ScreenInteractive::Fullscreen();
 
     GameBoard<9, 9> gb;
@@ -298,6 +287,7 @@ void game()
 
     const auto make_leds = [&] {
         std::vector<Component> leds;
+        leds.reserve ( gb.width * gb.height );
         gb.visit ( [&] ( const auto & p, auto & gbo ) {
             leds.push_back ( LED ( &gbo[p], [ =, &gbo] {
                 if ( !gbo.solved() ) {
@@ -313,8 +303,10 @@ void game()
     auto quit_button = Button ( "  Back  ", screen.ExitLoopClosure() );
     auto make_layout = [&] {
         std::vector<Element> rows;
+        rows.reserve ( 9 );
         for ( auto x = 0UL; x < gb.width; x++ ) {
             std::vector<Element> row;
+            row.reserve ( 9 );
             for ( auto y = 0UL; y < gb.height; y++ ) {
                 row.push_back ( leds[y * gb.width + x]->Render() );
             }
@@ -365,8 +357,7 @@ void game()
 }
 
 //-----------------------------------------------------------------------------//
-void seed()
-{
+void seed() {
     auto screen = ScreenInteractive::Fullscreen();
 
     std::string start_text{ " START " };
@@ -374,8 +365,8 @@ void seed()
     std::string input_text{};
 
     auto start_button = Button ( &start_text, [&]() {
-        random_seed = std::hash<std::string> {} ( input_text );
-        game();
+        uint64_t random_seed = std::hash<std::string> {} ( input_text );
+        game ( random_seed );
     } );
     auto back_button = Button ( &back_text, screen.ExitLoopClosure() );
     auto seed_input = Input ( &input_text, "SEED" );
@@ -412,8 +403,8 @@ void menu()
     std::string quit_text{ "   QUIT    " };
 
     auto start_button = Button ( &start_text, []() {
-        random_seed = uint64_t ( std::chrono::high_resolution_clock::now().time_since_epoch().count() );
-        game();
+        uint64_t random_seed = uint64_t ( std::chrono::high_resolution_clock::now().time_since_epoch().count() );
+        game ( random_seed );
     } );
 
     auto seed_button = Button ( &seed_text, seed );
@@ -442,15 +433,13 @@ void menu()
 }
 
 //-----------------------------------------------------------------------------//
-struct ColorRGB
-{
+struct ColorRGB {
     std::uint8_t R, G, B;
 };
 
 //-----------------------------------------------------------------------------//
 // A simple way of representing a bitmap on screen using only characters
-struct Bitmap : Node
-{
+struct Bitmap : Node {
     Bitmap ( std::size_t width, std::size_t height ) // NOLINT same typed parameters adjacent to each other
         : width_ ( width ), height_ ( height )
     {}
@@ -501,8 +490,7 @@ private:
 };
 
 //-----------------------------------------------------------------------------//
-int main ( int argc, const char **argv )
-{
+int main ( int argc, const char **argv ) {
     try {
         static constexpr auto USAGE =
             R"(lightsround
