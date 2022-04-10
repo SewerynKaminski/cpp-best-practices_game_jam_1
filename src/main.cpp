@@ -251,21 +251,7 @@ Component LED ( bool *b, std::function<void() > on_click ) {
 }
 
 //-----------------------------------------------------------------------------//
-const auto header = hbox ( {
-    text ( fmt::format ( "LightsRound v.{}.{}.{}",
-                         cpp_best_practices_game_jam_one::cmake::project_version_major,
-                         cpp_best_practices_game_jam_one::cmake::project_version_minor,
-                         cpp_best_practices_game_jam_one::cmake::project_version_patch ) ),
-                                                         filler(),
-                                                         text ( "Seweryn Kamiński" ),
-} );
-
-const auto footer = hbox ( {
-    text ( "2022 - Cpp best practices" ), filler(), text ( "Game Jam 1" )
-} );
-
-//-----------------------------------------------------------------------------//
-void game ( uint64_t random_seed ) {
+void game ( const auto& header, const auto& footer, uint64_t random_seed ) {
     auto screen = ScreenInteractive::Fullscreen();
 
     GameBoard<9, 9> gb;
@@ -352,7 +338,7 @@ void game ( uint64_t random_seed ) {
 }
 
 //-----------------------------------------------------------------------------//
-void seed() {
+void seed ( const auto& header, const auto& footer ) {
     auto screen = ScreenInteractive::Fullscreen();
 
     std::string start_text{ " START " };
@@ -361,7 +347,7 @@ void seed() {
 
     auto start_button = Button ( &start_text, [&]() {
         uint64_t random_seed = std::hash<std::string> {} ( input_text );
-        game ( random_seed );
+        game ( header, footer, random_seed );
     } );
     auto back_button = Button ( &back_text, screen.ExitLoopClosure() );
     auto seed_input = Input ( &input_text, "SEED" );
@@ -389,20 +375,21 @@ void seed() {
 }
 
 //-----------------------------------------------------------------------------//
-void menu()
-{
+void menu ( const auto& header, const auto& footer ) {
     auto screen = ScreenInteractive::Fullscreen();
 
     std::string start_text{ "   START   " };
     std::string seed_text{ "   SEED    " };
     std::string quit_text{ "   QUIT    " };
 
-    auto start_button = Button ( &start_text, []() {
+    auto start_button = Button ( &start_text, [header, footer]() {
         uint64_t random_seed = uint64_t ( std::chrono::high_resolution_clock::now().time_since_epoch().count() );
-        game ( random_seed );
+        game ( header, footer, random_seed );
     } );
 
-    auto seed_button = Button ( &seed_text, seed );
+    auto seed_button = Button ( &seed_text, [header, footer]() {
+        seed ( header, footer );
+    } );
     auto quit_button = Button ( &quit_text, screen.ExitLoopClosure() );
 
     std::vector<Component> buttons;
@@ -508,7 +495,20 @@ int main ( int argc, const char **argv ) {
                       cpp_best_practices_game_jam_one::cmake::project_version_minor,
                       cpp_best_practices_game_jam_one::cmake::project_version_patch ) );
         // from config.hpp via CMake
-        menu();
+        const auto header = hbox ( {
+            text ( fmt::format ( "LightsRound v.{}.{}.{}",
+                                 cpp_best_practices_game_jam_one::cmake::project_version_major,
+                                 cpp_best_practices_game_jam_one::cmake::project_version_minor,
+                                 cpp_best_practices_game_jam_one::cmake::project_version_patch ) ),
+            filler(),
+            text ( "Seweryn Kamiński" ),
+        } );
+
+        const auto footer = hbox ( {
+            text ( "2022 - Cpp best practices" ), filler(), text ( "Game Jam 1" )
+        } );
+
+        menu ( header, footer );
     } catch ( const std::exception &e ) {
         fmt::print ( "Unhandled exception in main: {}", e.what() );
     }
