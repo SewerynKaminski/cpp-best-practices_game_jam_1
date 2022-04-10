@@ -62,8 +62,8 @@ struct GameBoard {
     }
 
     void visit ( auto visitor ) {
-        for ( auto x : Range ( 0UL, width ) ) {
-            for ( auto y : Range ( 0UL, height ) ) {
+        for ( auto x = 0UL; x < width; x++ ) {
+            for ( auto y = 0UL; y < height; y++ ) {
                 const Point p { x, y };
                 visitor ( p, *this );
             }
@@ -71,8 +71,8 @@ struct GameBoard {
     }
 
     void visit ( auto visitor ) const {
-        for ( auto x : Range ( 0UL, width ) ) {
-            for ( auto y : Range ( 0UL, height ) ) {
+        for ( auto x = 0UL; x < width; x++ ) {
+            for ( auto y = 0UL; y < height; y++ ) {
                 const Point p { x, y };
                 if ( visitor ( p, *this ) ) break;
             }
@@ -310,9 +310,9 @@ void game ( ) {
     auto quit_button = Button ( "  Back  ", screen.ExitLoopClosure ( ) );
     auto make_layout = [&] {
         std::vector<Element> rows;
-        for ( auto x : Range ( 0UL, gb.width ) ) {
+        for ( auto x = 0UL; x < gb.width; x++ ) {
             std::vector<Element> row;
-            for ( auto y : Range ( 0UL, gb.height ) ) {
+            for ( auto y = 0UL; y < gb.height; y++ ) {
                 row.push_back ( leds[y * gb.width + x]->Render() );
             }
             rows.push_back ( hbox ( std::move ( row ) ) );
@@ -480,8 +480,8 @@ struct Bitmap : Node {
     }
 
     void Render ( Screen &screen ) override {
-        for ( auto x : Range ( 0UL, width_ ) ) {
-            for ( auto y : Range ( 0UL,  height_ ) ) {
+        for ( auto x = 0UL; x < width_; x++ ) {
+            for ( auto y = 0UL; y < height_; y++ ) {
                 auto &p = screen.PixelAt ( box_.x_min + static_cast<int> ( x ), box_.y_min + static_cast<int> ( y ) );
                 p.character = "▄";// "▀"
                 const auto &top_color = at ( x, y * 2 );
