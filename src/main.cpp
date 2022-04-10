@@ -124,15 +124,13 @@ template<std::size_t Width, std::size_t Height> struct GameBoard
 };
 
 //-----------------------------------------------------------------------------//
-class LEDBase : public ComponentBase
-{
+class LEDBase : public ComponentBase {
 public:
-    LEDBase ( bool *state, std::function<void() > on_click ) : state_ ( state ), hovered_ ( false ), on_change ( on_click ) {}
+    LEDBase ( bool *state, std::function<void() > on_click ) : state_ ( state ), hovered_ ( false ), on_change ( std::move ( on_click ) ) {}
 
 private:
     // Component implementation.
-    Element Render() override
-    {
+    Element Render() override {
         // bool is_focused = Focused();
         // bool is_active = Active();
 
@@ -141,138 +139,26 @@ private:
             return text ( "▀" ) | color ( c ) | bgcolor ( bgc );
         };
 
-        static constexpr uint8_t pattern_on[8 * 8] = {
-            0,
-            10,
-            20,
-            20,
-            20,
-            20,
-            10,
-            0,
-            10,
-            20,
-            89,
-            89,
-            89,
-            75,
-            20,
-            10,
-            20,
-            89,
-            99,
-            99,
-            89,
-            89,
-            75,
-            20,
-            20,
-            89,
-            99,
-            99,
-            89,
-            89,
-            75,
-            20,
-            20,
-            89,
-            89,
-            89,
-            89,
-            89,
-            75,
-            20,
-            20,
-            75,
-            89,
-            89,
-            89,
-            75,
-            75,
-            20,
-            10,
-            20,
-            75,
-            75,
-            75,
-            75,
-            20,
-            10,
-            0,
-            10,
-            20,
-            20,
-            20,
-            20,
-            10,
-            0,
+        static constexpr std::array<uint8_t, 8 * 8> pattern_on {
+            0, 10, 20, 20, 20, 20, 10, 0,
+            10, 20, 89, 89, 89, 75, 20, 10,
+            20, 89, 99, 99, 89, 89, 75, 20,
+            20, 89, 99, 99, 89, 89, 75, 20,
+            20, 89, 89, 89, 89, 89, 75, 20,
+            20, 75, 89, 89, 89, 75, 75, 20,
+            10, 20, 75, 75, 75, 75, 20, 10,
+            0, 10, 20, 20, 20, 20, 10, 0,
         };
 
-        static constexpr uint8_t pattern_off[8 * 8] = {
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            30,
-            30,
-            30,
-            10,
-            0,
-            0,
-            0,
-            30,
-            36,
-            36,
-            30,
-            30,
-            10,
-            0,
-            0,
-            30,
-            36,
-            36,
-            30,
-            30,
-            10,
-            0,
-            0,
-            30,
-            30,
-            30,
-            30,
-            30,
-            10,
-            0,
-            0,
-            10,
-            30,
-            30,
-            30,
-            10,
-            10,
-            0,
-            0,
-            0,
-            10,
-            10,
-            10,
-            10,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
+        static constexpr std::array<uint8_t, 8 * 8> pattern_off {
+            0,  0,  0,  0,  0,  0, 0,  0,
+            0,  0, 30, 30, 30, 10, 0,  0,
+            0, 30, 36, 36, 30, 30, 10, 0,
+            0, 30, 36, 36, 30, 30, 10, 0,
+            0, 30, 30, 30, 30, 30, 10, 0,
+            0, 10, 30, 30, 30, 10, 10, 0,
+            0,  0, 10, 10, 10, 10,  0, 0,
+            0,  0,  0,  0,  0,  0,  0, 0,
         };
 
         static const double T = 0.3;
@@ -283,13 +169,13 @@ private:
         startup_ = *state_ ? fmin ( T, startup_ + d.count() ) : fmax ( 0.0, startup_ - d.count() );
         auto r = startup_ / T;
 
-        auto c = [&] ( int i ) {
+        auto c = [&] ( std::size_t i ) {
             uint8_t v = uint8_t ( r * pattern_on[i] + ( 1.0 - r ) * pattern_off[i] );
-            v = uint8_t ( v * 255 / 100 );
+            v = uint8_t ( v * UCHAR_MAX / 100 );    // NOLINT magic numbers
             return Color ( v * !hovered_, v, v * !hovered_ );
         };
 
-        auto line = [&] ( int l ) {
+        auto line = [&] ( std::size_t l ) {
             return hbox ( {
                 dp ( c ( l * 8 + 0 ), c ( l * 8 + 8 ) ),
                 dp ( c ( l * 8 + 1 ), c ( l * 8 + 9 ) ),
@@ -363,7 +249,7 @@ private:
     }
 
     bool *state_ = nullptr;
-    bool hovered_ = false;
+    bool hovered_;
     Box box_;
     std::function<void() > on_change;
     bool before_pressed_ = false;
