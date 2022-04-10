@@ -3,7 +3,6 @@
 #include <functional>
 #include <iostream>
 #include <random>
-#include <chrono>
 
 //-----------------------------------------------------------------------------//
 #include "ftxui/component/component_options.hpp"
