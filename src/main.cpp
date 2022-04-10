@@ -2,7 +2,6 @@
 #include <functional>
 #include <iostream>
 #include <random>
-#include <ranges>
 #include <chrono>
 
 //-----------------------------------------------------------------------------//
@@ -23,12 +22,6 @@
 
 //-----------------------------------------------------------------------------//
 using namespace ftxui;
-
-//-----------------------------------------------------------------------------//
-template<typename T>
-constexpr auto Range ( const T a, const T b ) {
-    return std::views::iota ( a, b );
-}
 
 //-----------------------------------------------------------------------------//
 template<std::size_t Width, std::size_t Height>
