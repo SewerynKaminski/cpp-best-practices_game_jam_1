@@ -70,7 +70,9 @@ template<std::size_t Width, std::size_t Height> struct GameBoard
         for ( auto x = 0UL; x < width; x++ ) {
             for ( auto y = 0UL; y < height; y++ ) {
                 const Point p{ x, y };
-                if ( visitor ( p, *this ) ) break;
+                if ( visitor ( p, *this ) ) {
+                    break;
+                }
             }
         }
     }
@@ -85,8 +87,12 @@ template<std::size_t Width, std::size_t Height> struct GameBoard
     /// Toggle one LED
     void toggle ( const Point &p )
     {
-        if ( p.x >= width ) return;
-        if ( p.y >= height ) return;
+        if ( p.x >= width ) {
+            return;
+        }
+        if ( p.y >= height ) {
+            return;
+        }
         ( *this ) [p] ^= true;
     }
 
@@ -310,9 +316,13 @@ private:
 
     bool OnEvent ( Event event ) override
     {
-        if ( !CaptureMouse ( event ) ) return false;
+        if ( !CaptureMouse ( event ) ) {
+            return false;
+        }
 
-        if ( event.is_mouse() ) return OnMouseEvent ( event );
+        if ( event.is_mouse() ) {
+            return OnMouseEvent ( event );
+        }
 
         if ( event == Event::Character ( ' ' ) || event == Event::Return ) {
             // option_->on_change();
