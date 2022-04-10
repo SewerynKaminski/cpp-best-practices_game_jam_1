@@ -609,12 +609,12 @@ int main ( int argc, const char **argv )
 {
     try {
         static constexpr auto USAGE =
-            R"(lightround
+            R"(lightsround
 
  Usage:
-       lightround
-       lightround (-h | --help)
-       lightround --version
+       lightsround
+       lightsround (-h | --help)
+       lightsround --version
  Options:
        -h --help     Show this screen.
        --version     Show version.
