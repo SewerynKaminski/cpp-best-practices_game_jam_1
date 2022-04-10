@@ -251,7 +251,7 @@ Component LED ( bool *b, const std::function<void() >& on_click ) {
 }
 
 //-----------------------------------------------------------------------------//
-void game ( const auto& header, const auto& footer, uint64_t random_seed ) {
+void game ( const auto& header, const auto& footer, uint32_t random_seed ) {
     auto screen = ScreenInteractive::Fullscreen();
 
     GameBoard<9, 9> gb;
@@ -307,8 +307,7 @@ void game ( const auto& header, const auto& footer, uint64_t random_seed ) {
 
     static constexpr auto randomization_iterations = 100;
 
-    std::mt19937 gen32{random_seed};
-    //gen32.seed ( random_seed );
+    std::mt19937 gen32{ uint32_t ( random_seed ) };
     std::uniform_int_distribution<std::size_t> x ( 0, gb.width - 1 );
     std::uniform_int_distribution<std::size_t> y ( 0, gb.height - 1 );
 
@@ -346,7 +345,7 @@ void seed ( const auto& header, const auto& footer ) {
     std::string input_text{};
 
     auto start_button = Button ( &start_text, [&]() {
-        uint64_t random_seed = std::hash<std::string> {} ( input_text );
+        auto random_seed = uint32_t ( std::hash<std::string> {} ( input_text ) );
         game ( header, footer, random_seed );
     } );
     auto back_button = Button ( &back_text, screen.ExitLoopClosure() );
@@ -383,7 +382,7 @@ void menu ( const auto& header, const auto& footer ) {
     std::string quit_text{ "   QUIT    " };
 
     auto start_button = Button ( &start_text, [header, footer]() {
-        uint64_t random_seed = uint64_t ( std::chrono::high_resolution_clock::now().time_since_epoch().count() );
+        auto random_seed = uint32_t ( std::chrono::high_resolution_clock::now().time_since_epoch().count() );
         game ( header, footer, random_seed );
     } );
 
