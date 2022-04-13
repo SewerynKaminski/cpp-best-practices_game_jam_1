@@ -25,11 +25,24 @@
 //-----------------------------------------------------------------------------//
 using namespace ftxui;
 
+namespace Board {
+enum Size : size_t {
+    Size_2x2 = 2,
+    Size_3x3 = 3,
+    Size_4x4 = 4,
+    Size_5x5 = 5,
+    Size_6x6 = 6,
+    Size_7x7 = 7,
+    Size_8x8 = 8,
+    Size_9x9 = 9,
+};
+}
+
 //-----------------------------------------------------------------------------//
-template<std::size_t Width, std::size_t Height> struct GameBoard {
+template<std::size_t Width, std::size_t Height>
+struct GameBoard {
     static constexpr auto width = Width;
     static constexpr auto height = Height;
-
     struct Point {
         std::size_t x, y;
         Point operator+ ( const Point &o ) const {
@@ -352,35 +365,35 @@ void boardsize ( const auto& header, const auto& footer, uint32_t random_seed ) 
     std::string back_text{ "  BACK  " };
 
     auto start_button = Button ( &start_text, [&]() {
-        game<9> ( header, footer, random_seed );
+        game<Board::Size_9x9> ( header, footer, random_seed );
     } );
     auto start2_button = ButtonBig ( &s2x2_text, [&]() {
-        game<2> ( header, footer, random_seed );
+        game<Board::Size_2x2> ( header, footer, random_seed );
     } );
     auto start3_button = ButtonBig ( &s3x3_text, [&]() {
-        game<3> ( header, footer, random_seed );
+        game<Board::Size_3x3> ( header, footer, random_seed );
     } );
     auto start4_button = ButtonBig ( &s4x4_text, [&]() {
-        game<4> ( header, footer, random_seed );
+        game<Board::Size_4x4> ( header, footer, random_seed );
     } );
     auto start5_button = ButtonBig ( &s5x5_text, [&]() {
-        game<5> ( header, footer, random_seed );
+        game<Board::Size_5x5> ( header, footer, random_seed );
     } );
     auto start6_button = ButtonBig ( &s6x6_text, [&]() {
-        game<6> ( header, footer, random_seed );
+        game<Board::Size_6x6> ( header, footer, random_seed );
     } );
     auto start7_button = ButtonBig ( &s7x7_text, [&]() {
-        game<7> ( header, footer, random_seed );
+        game<Board::Size_7x7> ( header, footer, random_seed );
     } );
     auto start8_button = ButtonBig ( &s8x8_text, [&]() {
-        game<8> ( header, footer, random_seed );
+        game<Board::Size_8x8> ( header, footer, random_seed );
     } );
     auto start9_button = ButtonBig ( &s9x9_text, [&]() {
-        game<9> ( header, footer, random_seed );
+        game<Board::Size_9x9> ( header, footer, random_seed );
     } );
     auto back_button = Button ( &back_text, screen.ExitLoopClosure() );
 
-    auto b = size ( HEIGHT, EQUAL, 5 ) | size ( WIDTH, EQUAL, 9 );
+    auto b = size ( HEIGHT, EQUAL, 5 ) | size ( WIDTH, EQUAL, 9 ); // NOLINT magic number
     std::vector<Component> buttons;
     auto make_layout = [&] {
         return vbox ( {
