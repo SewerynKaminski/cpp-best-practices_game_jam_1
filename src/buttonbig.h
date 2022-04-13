@@ -37,8 +37,8 @@ class ButtonBigBase : public ComponentBase {
 
 
 //-----------------------------------------------------------------------------//
-Component ButtonBig ( ConstStringRef label,
-                      std::function<void() > on_click,
+Component ButtonBig ( const ConstStringRef &label,
+                      const std::function<void ()> &on_click,
                       Ref<ButtonOption> = {} );
 
 #endif // BUTTONBIG_H
