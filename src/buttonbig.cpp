@@ -46,5 +46,5 @@ bool ButtonBigBase::OnEvent ( Event event ) {
 Component ButtonBig ( const ConstStringRef& label,
                       const std::function<void() >& on_click,
                       Ref<ButtonOption> option ) {
-    return Make<ButtonBigBase> ( label, std::move ( on_click ), std::move ( option ) );
+    return Make<ButtonBigBase> ( label, on_click, option );
 }
