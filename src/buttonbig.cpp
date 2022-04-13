@@ -2,7 +2,10 @@
 
 ButtonBigBase::ButtonBigBase ( ConstStringRef label,
                                std::function<void() > on_click,
-                               Ref<ButtonOption> option ) : label_ ( std::move ( label ) ), on_click_ ( on_click ), option_ ( option ) {
+                               Ref<ButtonOption> option )
+    : label_ ( std::move ( label ) ),
+      on_click_ ( std::move ( on_click ) ),
+      option_ ( std::move ( option ) ) {
 
 }
 
@@ -16,8 +19,9 @@ Element ButtonBigBase::Render() {
 
 bool ButtonBigBase::OnEvent ( Event event ) {
     if ( event.is_mouse() && box_.Contain ( event.mouse().x, event.mouse().y ) ) {
-        if ( !CaptureMouse ( event ) )
+        if ( !CaptureMouse ( event ) ) {
             return false;
+        }
 
         TakeFocus();
 
