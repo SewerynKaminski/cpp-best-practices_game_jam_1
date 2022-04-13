@@ -15,6 +15,7 @@
 #include <ftxui/component/component_base.hpp>
 #include <ftxui/component/screen_interactive.hpp>// for ScreenInteractive
 #include <spdlog/spdlog.h>// for logging
+#include "buttonbig.h"
 
 // This file will be generated automatically when you run the CMake configuration step.
 // It creates a namespace called `cpp_best_practices_game_jam_one`.
@@ -248,10 +249,12 @@ Component LED ( bool *b, const std::function<void() >& on_click ) {
 }
 
 //-----------------------------------------------------------------------------//
+template<size_t L>
 void game ( const auto& header, const auto& footer, uint32_t random_seed ) {
     auto screen = ScreenInteractive::Fullscreen();
 
-    GameBoard<9, 9> gb;
+    GameBoard<L, L> gb;
+    //GameBoard<9, 9> gb;
 
     std::string moves_text;
     std::string debug_text;
@@ -334,6 +337,86 @@ void game ( const auto& header, const auto& footer, uint32_t random_seed ) {
 }
 
 //-----------------------------------------------------------------------------//
+void boardsize ( const auto& header, const auto& footer, uint32_t random_seed ) {
+    auto screen = ScreenInteractive::Fullscreen();
+
+    std::string s2x2_text{ " 2x2 " };
+    std::string s3x3_text{ " 3x3 " };
+    std::string s4x4_text{ " 4x4 " };
+    std::string s5x5_text{ " 5x5 " };
+    std::string s6x6_text{ " 6x6 " };
+    std::string s7x7_text{ " 7x7 " };
+    std::string s8x8_text{ " 8x8 " };
+    std::string s9x9_text{ " 9x9 " };
+    std::string start_text{ "  START  " };
+    std::string back_text{ "  BACK  " };
+
+    auto start_button = Button ( &start_text, [&]() {
+        game<9> ( header, footer, random_seed );
+    } );
+    auto start2_button = ButtonBig ( &s2x2_text, [&]() {
+        game<2> ( header, footer, random_seed );
+    } );
+    auto start3_button = ButtonBig ( &s3x3_text, [&]() {
+        game<3> ( header, footer, random_seed );
+    } );
+    auto start4_button = ButtonBig ( &s4x4_text, [&]() {
+        game<4> ( header, footer, random_seed );
+    } );
+    auto start5_button = ButtonBig ( &s5x5_text, [&]() {
+        game<5> ( header, footer, random_seed );
+    } );
+    auto start6_button = ButtonBig ( &s6x6_text, [&]() {
+        game<6> ( header, footer, random_seed );
+    } );
+    auto start7_button = ButtonBig ( &s7x7_text, [&]() {
+        game<7> ( header, footer, random_seed );
+    } );
+    auto start8_button = ButtonBig ( &s8x8_text, [&]() {
+        game<8> ( header, footer, random_seed );
+    } );
+    auto start9_button = ButtonBig ( &s9x9_text, [&]() {
+        game<9> ( header, footer, random_seed );
+    } );
+    auto back_button = Button ( &back_text, screen.ExitLoopClosure() );
+
+    auto b = size ( HEIGHT, EQUAL, 5 ) | size ( WIDTH, EQUAL, 9 );
+    std::vector<Component> buttons;
+    auto make_layout = [&] {
+        return vbox ( {
+            header,
+            filler(),
+            hbox ( { filler(), text ( "Select board size" ), filler() } ),
+            hbox ( {
+                filler(), start2_button->Render() | b,
+                start3_button->Render() | b,
+                start4_button->Render() | b,
+                filler() } ),
+            hbox ( {filler(), start5_button->Render() | b, start6_button->Render() | b, start7_button->Render() | b, filler() } ),
+            hbox ( {filler(), start8_button->Render() | b, start9_button->Render() | b, filler() } ),
+            filler(),
+            hbox ( { back_button->Render(), filler(), start_button->Render() } ),
+            footer,
+        } );
+    };
+
+    buttons.push_back ( start_button );
+    buttons.push_back ( start2_button );
+    buttons.push_back ( start3_button );
+    buttons.push_back ( start4_button );
+    buttons.push_back ( start5_button );
+    buttons.push_back ( start6_button );
+    buttons.push_back ( start7_button );
+    buttons.push_back ( start8_button );
+    buttons.push_back ( start9_button );
+    buttons.push_back ( back_button );
+    auto container = Container::Horizontal ( buttons );
+    auto renderer = Renderer ( container, make_layout );
+
+    screen.Loop ( renderer );
+}
+
+//-----------------------------------------------------------------------------//
 void seed ( const auto& header, const auto& footer ) {
     auto screen = ScreenInteractive::Fullscreen();
 
@@ -343,7 +426,7 @@ void seed ( const auto& header, const auto& footer ) {
 
     auto start_button = Button ( &start_text, [&]() {
         auto random_seed = uint32_t ( std::hash<std::string> {} ( input_text ) );
-        game ( header, footer, random_seed );
+        boardsize ( header, footer, random_seed );
     } );
     auto back_button = Button ( &back_text, screen.ExitLoopClosure() );
     auto seed_input = Input ( &input_text, "SEED" );
@@ -370,6 +453,7 @@ void seed ( const auto& header, const auto& footer ) {
     screen.Loop ( renderer );
 }
 
+
 //-----------------------------------------------------------------------------//
 void menu ( const auto& header, const auto& footer ) {
     auto screen = ScreenInteractive::Fullscreen();
@@ -380,7 +464,7 @@ void menu ( const auto& header, const auto& footer ) {
 
     auto start_button = Button ( &start_text, [header, footer]() {
         auto random_seed = uint32_t ( std::chrono::high_resolution_clock::now().time_since_epoch().count() );
-        game ( header, footer, random_seed );
+        boardsize ( header, footer, random_seed );
     } );
 
     auto seed_button = Button ( &seed_text, [header, footer]() {
