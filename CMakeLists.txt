@@ -50,8 +50,8 @@ include(${_project_options_SOURCE_DIR}/Index.cmake)
 # Set the project name and language
 project(
   cpp-best-practices_game_jam_1
-  VERSION 0.1.0
-  DESCRIPTION ""
+  VERSION 0.1.2
+  DESCRIPTION "Puzzle game"
   HOMEPAGE_URL "https://github.com/SewerynKaminski/cpp-best-practices_game_jam_1"
   LANGUAGES CXX C)
 

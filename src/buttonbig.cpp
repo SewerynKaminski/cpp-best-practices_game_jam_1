@@ -2,7 +2,7 @@
 
 ButtonBigBase::ButtonBigBase ( ConstStringRef label,
                                std::function<void() > on_click,
-                               Ref<ButtonOption> option ) : label_ ( label ), on_click_ ( on_click ), option_ ( option ) {
+                               Ref<ButtonOption> option ) : label_ ( std::move ( label ) ), on_click_ ( on_click ), option_ ( option ) {
 
 }
 

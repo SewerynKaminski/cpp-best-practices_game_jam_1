@@ -340,14 +340,14 @@ void game ( const auto& header, const auto& footer, uint32_t random_seed ) {
 void boardsize ( const auto& header, const auto& footer, uint32_t random_seed ) {
     auto screen = ScreenInteractive::Fullscreen();
 
-    std::string s2x2_text{ " 2x2 " };
-    std::string s3x3_text{ " 3x3 " };
-    std::string s4x4_text{ " 4x4 " };
-    std::string s5x5_text{ " 5x5 " };
-    std::string s6x6_text{ " 6x6 " };
-    std::string s7x7_text{ " 7x7 " };
-    std::string s8x8_text{ " 8x8 " };
-    std::string s9x9_text{ " 9x9 " };
+    std::string s2x2_text{ "2x2" };
+    std::string s3x3_text{ "3x3" };
+    std::string s4x4_text{ "4x4" };
+    std::string s5x5_text{ "5x5" };
+    std::string s6x6_text{ "6x6" };
+    std::string s7x7_text{ "7x7" };
+    std::string s8x8_text{ "8x8" };
+    std::string s9x9_text{ "9x9" };
     std::string start_text{ "  START  " };
     std::string back_text{ "  BACK  " };
 
