@@ -54,6 +54,7 @@ struct GameBoard {
     };
 
     std::array<bool, height * width> values{};
+    std::array<bool, height * width> hints_{};
     std::size_t move_count{ 0 };
 
     bool &operator[] ( const Point &p ) {
@@ -84,10 +85,19 @@ struct GameBoard {
         }
     }
 
-    GameBoard() {
+    void clear ( ) {
         visit ( [ = ] ( const auto & p, auto & gameboard ) {
             gameboard[p] = true;
+            gameboard.hints ( p ) = false;
         } );
+    }
+
+    bool& hints ( const Point& p ) {
+        return hints_[p.x + p.y * width];
+    }
+
+    GameBoard() {
+        clear();
     }
 
     /// Toggle one LED
@@ -104,6 +114,7 @@ struct GameBoard {
     /// Togle cross (5 LEDs)
     void press ( const Point &p ) {
         ++move_count;
+        hints_ [p.x + p.y * width] ^= true;
         toggle ( p );
         toggle ( p - Point{ 1, 0 } );
         toggle ( p - Point{ 0, 1 } );
@@ -129,7 +140,8 @@ struct GameBoard {
 //-----------------------------------------------------------------------------//
 class LEDBase : public ComponentBase {
 public:
-    LEDBase ( bool *state, std::function<void() > on_click ) : state_ ( state ), hovered_ ( false ), on_change ( std::move ( on_click ) ) {}
+    LEDBase ( bool *state, bool *hint, bool* show_hints, std::function<void() > on_click ) :
+        state_ ( state ), hint_ ( hint ), show_hints_ ( show_hints ), hovered_ ( false ), on_change ( std::move ( on_click ) ) {}
 
 private:
     // Component implementation.
@@ -175,6 +187,9 @@ private:
         auto c = [&] ( std::size_t i ) {
             auto v = uint8_t ( r * pattern_on.at ( i ) + ( 1.0 - r ) * pattern_off.at ( i ) );
             v = uint8_t ( v * std::numeric_limits<uint8_t>::max() / 100 );    // NOLINT magic numbers
+            if ( show_hints_ && *show_hints_ && hint_ && *hint_ ) {
+                return Color ( v, v * uint8_t ( hovered_ ), 0 );
+            }
             return Color ( v * uint8_t ( !hovered_ ), v, v * uint8_t ( !hovered_ ) );
         };
 
@@ -248,6 +263,8 @@ private:
     }
 
     bool *state_ = nullptr;
+    bool *hint_ = nullptr;
+    bool *show_hints_ = nullptr;
     bool hovered_;
     Box box_;
     std::function<void() > on_change;
@@ -257,8 +274,8 @@ private:
 };
 
 //-----------------------------------------------------------------------------//
-Component LED ( bool *b, const std::function<void() >& on_click ) {
-    return Make<LEDBase> ( b, on_click );
+Component LED ( bool *b, bool* hint, bool* show_hints, const std::function<void() >& on_click ) {
+    return Make<LEDBase> ( b, hint, show_hints, on_click );
 }
 
 //-----------------------------------------------------------------------------//
@@ -266,11 +283,16 @@ template<size_t L>
 void game ( const auto& header, const auto& footer, uint32_t random_seed ) {
     auto screen = ScreenInteractive::Fullscreen();
 
+    bool show_hints = false;
     GameBoard<L, L> gb;
-    //GameBoard<9, 9> gb;
+
+    static constexpr auto randomization_iterations = 100;
 
     std::string moves_text;
     std::string debug_text;
+    std::string show_hints_str{"  Show hints  "};
+    std::string hide_hints_str{"  Hide hints  "};
+    std::string show_hints_text{show_hints_str};
 
     const auto update_moves_text = [&moves_text] ( const auto & game_board ) {
         moves_text = fmt::format ( "Moves: {}", game_board.move_count );
@@ -279,11 +301,26 @@ void game ( const auto& header, const auto& footer, uint32_t random_seed ) {
         }
     };
 
+    auto reset_game = [&] ( uint32_t rnd_seed ) {
+        gb.clear();
+        std::mt19937 gen32{ rnd_seed };
+        std::uniform_int_distribution<std::size_t> x ( 0, gb.width - 1 );
+        std::uniform_int_distribution<std::size_t> y ( 0, gb.height - 1 );
+        for ( int i = 0; i < randomization_iterations; i++ ) {
+            gb.press ( { x ( gen32 ), y ( gen32 ) } );
+        }
+        if ( gb.solved() ) {
+            gb.press ( { x ( gen32 ), y ( gen32 ) } );
+        }
+        gb.move_count = 0;
+        update_moves_text ( gb );
+    };
+
     const auto make_leds = [&] {
         std::vector<Component> leds;
         leds.reserve ( gb.width * gb.height );
         gb.visit ( [&] ( const auto & p, auto & gbo ) {
-            leds.push_back ( LED ( &gbo[p], [ =, &gbo] {
+            leds.push_back ( LED ( &gbo[p], &gbo.hints ( p ), &show_hints, [ =, &gbo] {
                 if ( !gbo.solved() ) {
                     gbo.press ( p );
                 }
@@ -294,7 +331,21 @@ void game ( const auto& header, const auto& footer, uint32_t random_seed ) {
     };
 
     auto leds = make_leds();
-    auto quit_button = Button ( "  Back  ", screen.ExitLoopClosure() );
+    auto back_button = Button ( "  Back  ", screen.ExitLoopClosure() );
+    auto hints_button = Button ( &show_hints_text, [&]() {
+        show_hints = !show_hints;
+        show_hints_text = show_hints
+                          ? hide_hints_str
+                          : show_hints_str;
+    } );
+    auto reset_button = Button ( "  Reset  ", [&]() {
+        reset_game ( random_seed );
+    } );
+    auto new_button = Button ( "  New  ", [&]() {
+        random_seed = uint32_t ( std::chrono::high_resolution_clock::now().time_since_epoch().count() );
+        reset_game ( random_seed );
+    } );
+
     auto make_layout = [&] {
         std::vector<Element> rows;
         rows.reserve ( gb.width );
@@ -313,25 +364,21 @@ void game ( const auto& header, const auto& footer, uint32_t random_seed ) {
             hbox ( { filler(), text ( moves_text ), filler() } ),
             hbox ( { filler(), vbox ( std::move ( rows ) ) | border, filler() } ),
             filler(),
-            hbox ( quit_button->Render() ),
+            hbox ( {
+                back_button->Render(),
+                filler(),
+                hints_button->Render(), reset_button->Render(), new_button->Render(),
+                filler(), hbox() | size ( WIDTH, EQUAL, 10 ) } ),
             footer,
         } );
     };
 
-    static constexpr auto randomization_iterations = 100;
-
-    std::mt19937 gen32{ uint32_t ( random_seed ) };
-    std::uniform_int_distribution<std::size_t> x ( 0, gb.width - 1 );
-    std::uniform_int_distribution<std::size_t> y ( 0, gb.height - 1 );
-
-    for ( int i = 0; i < randomization_iterations; i++ ) {
-        gb.press ( { x ( gen32 ), y ( gen32 ) } );
-    }
-    gb.move_count = 0;
-    update_moves_text ( gb );
-
+    reset_game ( random_seed );
     auto all_buttons = leds;
-    all_buttons.push_back ( quit_button );
+    all_buttons.push_back ( back_button );
+    all_buttons.push_back ( hints_button );
+    all_buttons.push_back ( reset_button );
+    all_buttons.push_back ( new_button );
     auto container = Container::Horizontal ( all_buttons );
     auto renderer = Renderer ( container, make_layout );
 
