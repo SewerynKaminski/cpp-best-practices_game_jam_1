@@ -93,7 +93,7 @@ struct GameBoard {
     }
 
     bool& hints ( const Point& p ) {
-        return hints_[p.x + p.y * width];
+        return hints_.at ( p.x + p.y * width );
     }
 
     GameBoard() {
@@ -114,7 +114,7 @@ struct GameBoard {
     /// Togle cross (5 LEDs)
     void press ( const Point &p ) {
         ++move_count;
-        hints_ [p.x + p.y * width] ^= true;
+        hints_.at ( p.x + p.y * width ) ^= true;
         toggle ( p );
         toggle ( p - Point{ 1, 0 } );
         toggle ( p - Point{ 0, 1 } );
@@ -138,10 +138,17 @@ struct GameBoard {
 };
 
 //-----------------------------------------------------------------------------//
+struct Bools {
+    bool *state;
+    bool* hint;
+    bool* show_hints;
+};
+
+//-----------------------------------------------------------------------------//
 class LEDBase : public ComponentBase {
 public:
-    LEDBase ( bool *state, bool *hint, bool* show_hints, std::function<void() > on_click ) :
-        state_ ( state ), hint_ ( hint ), show_hints_ ( show_hints ), hovered_ ( false ), on_change ( std::move ( on_click ) ) {}
+    LEDBase ( const Bools& b, std::function<void() > on_click ) :
+        state_ ( b.state ), hint_ ( b.hint ), show_hints_ ( b.show_hints ), hovered_ ( false ), on_change ( std::move ( on_click ) ) {}
 
 private:
     // Component implementation.
@@ -187,7 +194,7 @@ private:
         auto c = [&] ( std::size_t i ) {
             auto v = uint8_t ( r * pattern_on.at ( i ) + ( 1.0 - r ) * pattern_off.at ( i ) );
             v = uint8_t ( v * std::numeric_limits<uint8_t>::max() / 100 );    // NOLINT magic numbers
-            if ( show_hints_ && *show_hints_ && hint_ && *hint_ ) {
+            if ( show_hints_ != nullptr && *show_hints_ && hint_ != nullptr && *hint_ ) {
                 return Color ( v, v * uint8_t ( hovered_ ), 0 );
             }
             return Color ( v * uint8_t ( !hovered_ ), v, v * uint8_t ( !hovered_ ) );
@@ -274,8 +281,9 @@ private:
 };
 
 //-----------------------------------------------------------------------------//
-Component LED ( bool *b, bool* hint, bool* show_hints, const std::function<void() >& on_click ) {
-    return Make<LEDBase> ( b, hint, show_hints, on_click );
+//Component LED ( bool *b, bool* hint, bool* show_hints, const std::function<void() >& on_click ) {
+Component LED ( const Bools& bools, const std::function<void() >& on_click ) {
+    return Make<LEDBase> ( bools, on_click );
 }
 
 //-----------------------------------------------------------------------------//
@@ -320,7 +328,8 @@ void game ( const auto& header, const auto& footer, uint32_t random_seed ) {
         std::vector<Component> leds;
         leds.reserve ( gb.width * gb.height );
         gb.visit ( [&] ( const auto & p, auto & gbo ) {
-            leds.push_back ( LED ( &gbo[p], &gbo.hints ( p ), &show_hints, [ =, &gbo] {
+            const Bools b{&gbo[p], &gbo.hints ( p ), &show_hints};
+            leds.push_back ( LED ( b, [ =, &gbo] {
                 if ( !gbo.solved() ) {
                     gbo.press ( p );
                 }
@@ -368,7 +377,7 @@ void game ( const auto& header, const auto& footer, uint32_t random_seed ) {
                 back_button->Render(),
                 filler(),
                 hints_button->Render(), reset_button->Render(), new_button->Render(),
-                filler(), hbox() | size ( WIDTH, EQUAL, 10 ) } ),
+                filler(), hbox() | size ( WIDTH, EQUAL, 10 ) } ),// NOLINT magic numbers
             footer,
         } );
     };
